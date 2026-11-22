@@ -1,7 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Linking, View } from 'react-native';
-import { AppText, Avatar, Badge, BookCover, Button, Card, EmptyState, ErrorState, Input, Loading, Row, Screen, Section, Segmented } from '@/components/ui';
+import { AppText, Avatar, Badge, BookCover, Button, Card, EmptyState, ErrorState, Input, Loading, Row, Screen, Section, Segmented, TrashButton } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { authorLine, fmtDateTime, timeAgo } from '@/lib/format';
 import { useData } from '@/lib/hooks';
@@ -200,7 +200,7 @@ export default function MeetingScreen() {
       ) : null}
 
       <Button
-        icon="sparkles-outline"
+        icon="robot-outline"
         title={t('meeting.discussion')}
         onPress={() =>
           router.push(`/discussion?${book ? `book=${encodeURIComponent(book.external_id)}&` : ''}club=${meeting.club_id}`)
@@ -222,7 +222,7 @@ export default function MeetingScreen() {
             {canManage ? (
               <Row>
                 <Button small variant="secondary" icon="create-outline" title={t('meeting.editSummary')} onPress={() => setEditing(true)} />
-                <Button small variant="secondary" icon="sparkles-outline" title={t('meeting.aiSummary')} onPress={aiSummary} loading={busy} disabled={notes.length === 0} />
+                <Button small variant="secondary" icon="robot-outline" title={t('meeting.aiSummary')} onPress={aiSummary} loading={busy} disabled={notes.length === 0} />
               </Row>
             ) : null}
           </>
@@ -246,9 +246,7 @@ export default function MeetingScreen() {
                 <AppText>{n.body}</AppText>
               </View>
               {n.user_id === user!.id ? (
-                <AppText variant="caption" muted onPress={() => guard(() => supabase.from('meeting_notes').delete().eq('id', n.id))}>
-                  {t('common.delete')}
-                </AppText>
+                <TrashButton label={t('common.delete')} onPress={() => guard(() => supabase.from('meeting_notes').delete().eq('id', n.id))} />
               ) : null}
             </Row>
           </Card>
@@ -260,7 +258,7 @@ export default function MeetingScreen() {
       {canManage ? (
         <View style={{ gap: 6 }}>
           <Button variant="ghost" title={meeting.status === 'cancelled' ? t('meeting.restore') : t('meeting.cancel')} onPress={toggleCancel} />
-          <Button variant="ghost" title={t('meeting.delete')} onPress={remove} />
+          <TrashButton wide label={t('meeting.delete')} onPress={remove} />
         </View>
       ) : null}
     </Screen>

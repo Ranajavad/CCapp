@@ -13,8 +13,10 @@ import { isSupabaseConfigured } from '@/lib/supabase';
 import { forPageTurn, pageTurnSpec } from '@/lib/pageTurn';
 import { ThemeProvider, useTheme } from '@/lib/theme';
 
+const instantSpec = { animation: 'timing' as const, config: { duration: 0 } };
+
 function Gate() {
-  const { user, loading } = useAuth();
+  const { signedIn, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
   const { t } = useT();
@@ -27,9 +29,9 @@ function Gate() {
   useEffect(() => {
     if (loading || !(isSupabaseConfigured || SKIP_LOGIN)) return;
     const inAuth = segments[0] === '(auth)';
-    if (!user && !inAuth) router.replace('/(auth)/login');
-    else if (user && inAuth) router.replace('/(tabs)');
-  }, [user, loading, segments, router]);
+    if (!signedIn && !inAuth) router.replace('/(auth)/login');
+    else if (signedIn && inAuth) router.replace('/(tabs)');
+  }, [signedIn, loading, segments, router]);
 
   if (!isSupabaseConfigured && !SKIP_LOGIN) {
     return (
@@ -66,7 +68,17 @@ function Gate() {
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="(auth)"
+          options={{
+            headerShown: false,
+            // No page turn (and no dimming shadow) when logging out: just show the log-in page.
+            cardStyleInterpolator: () => ({}),
+            cardOverlayEnabled: false,
+            cardShadowEnabled: false,
+            transitionSpec: { open: instantSpec, close: instantSpec },
+          }}
+        />
         <Stack.Screen
           name="add-book"
           options={{

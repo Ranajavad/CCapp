@@ -3,7 +3,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { BookPickerModal } from '@/components/BookPickerModal';
-import { AppText, BookCover, Button, Card, Chip, Row, Screen, Section } from '@/components/ui';
+import { AppText, BookCover, Button, Card, Chip, RobotBadge, Row, Screen, Section } from '@/components/ui';
 import { resolveBook } from '@/lib/books';
 import { authorLine } from '@/lib/format';
 import { TKey, useT } from '@/lib/i18n';
@@ -132,7 +132,12 @@ export default function Discussion() {
 
       {!book ? (
         <Card>
-          <AppText variant="heading">✨ {t('ai.title')}</AppText>
+          <Row>
+            <RobotBadge size={40} />
+            <AppText variant="heading" style={{ flex: 1 }}>
+              {t('ai.title')}
+            </AppText>
+          </Row>
           <AppText muted>{t('ai.intro')}</AppText>
           <Button icon="search" title={t('ai.pickBook')} onPress={() => setPicker(true)} />
         </Card>

@@ -1,7 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 import { Alert, View } from 'react-native';
-import { AppText, Avatar, Badge, Button, Card, EmptyState, ErrorState, Loading, Row, Screen } from '@/components/ui';
+import { AppText, Avatar, Badge, Button, Card, EmptyState, ErrorState, Loading, Row, Screen, TrashButton } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { fmtDateTime } from '@/lib/format';
 import { useData } from '@/lib/hooks';
@@ -124,7 +124,7 @@ export default function PollScreen() {
       {poll.meeting_id ? (
         <Button variant="secondary" icon="calendar-outline" title={t('poll.viewMeeting')} onPress={() => router.push(`/club/meeting/${poll.meeting_id}`)} />
       ) : null}
-      {canManage ? <Button variant="ghost" title={t('poll.delete')} onPress={remove} /> : null}
+      {canManage ? <TrashButton wide label={t('poll.delete')} onPress={remove} /> : null}
     </Screen>
   );
 }

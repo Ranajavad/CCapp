@@ -19,6 +19,15 @@ export const supabase = createClient(
       detectSessionInUrl: false,
       flowType: 'pkce',
     },
+    global: {
+      // Logging out only clears this device. We skip the server's /logout call because it would revoke
+      // the refresh token, and the log-in page needs that token for the one-tap "Continue as …" button.
+      fetch: (input, init) => {
+        const target = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+        if (target.includes('/auth/v1/logout')) return Promise.resolve(new Response(null, { status: 204 }));
+        return fetch(input, init);
+      },
+    },
   },
 );
 

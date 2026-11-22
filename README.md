@@ -8,7 +8,7 @@ React Native (Expo + TypeScript + expo-router) for iOS and Android · Supabase b
 
 | Area | Features |
 | --- | --- |
-| **Log in / Register** | E-mail + password, Sign in with Apple (iPhone), Google, phone number (SMS code). Phone/Apple/Google create the account on first use, so log in and register share the same options. Forgot password via a 6-digit e-mail code. |
+| **Log in / Register** | E-mail + password, Sign in with Apple (iPhone) and Google. They create the account on first use, so log in and register share the same options. Forgot password via a 6-digit e-mail code. |
 | **Home** | "Currently reading" shelf plus a friends feed: *"Rana is reading The Seven Husbands of Evelyn Hugo"*, reviews like *"I did not expect that plot twist!"*. Friends react with emoji and comment. |
 | **My Library** | Wish to read / Reading / Read, 1–5 star rating, reading progress, private notes pinned to a page or chapter, add books by search, ISBN or manually, and quick links to Norli and Ark. |
 | **Discover** | Genre shelves, new releases, search and a Norwegian-only filter. Data from the free Google Books API. Only the cover **URL** is stored – never the image. |
@@ -32,7 +32,7 @@ Use a **development build** (`npx expo run:ios` / `run:android`, or EAS) rather 
 
 1. Create a project at supabase.com and put the URL and anon key in `.env`.
 2. Apply the schema: `supabase db push`, or paste `supabase/migrations/0001_init.sql` into the SQL editor.
-3. **Auth → Providers**: enable Email, Phone (needs an SMS provider such as Twilio), Google and Apple.
+3. **Auth → Providers**: enable Email, Google and Apple.
 4. **Auth → URL configuration**: add `candc://auth-callback` to the allowed redirect URLs.
 5. **Auth → Email templates → Reset password**: include the code in the mail, e.g. `Your code: {{ .Token }}`. The app asks for this code instead of using a link.
 6. Optional: enable `pg_cron` and run `supabase/optional/pg_cron.sql` so voting winners are announced even when nobody has the app open. Without it, rounds are closed the next time any member opens the club.

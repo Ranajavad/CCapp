@@ -6,6 +6,7 @@ import { AppText, BookCover, Button, Card, EmptyState, ErrorState, Loading, Row,
 import { useAuth } from '@/lib/auth';
 import { useData } from '@/lib/hooks';
 import { useT } from '@/lib/i18n';
+import { syncClubCurrentReads } from '@/lib/library';
 import { supabase } from '@/lib/supabase';
 import { radius, useTheme } from '@/lib/theme';
 import type { LibraryEntry } from '@/lib/types';
@@ -17,6 +18,7 @@ export default function Home() {
   const router = useRouter();
 
   const { data, loading, error, refreshing, refresh, reload } = useData(async () => {
+    await syncClubCurrentReads(user!.id);
     const [reading, feed] = await Promise.all([
       supabase
         .from('library_entries')
@@ -38,14 +40,7 @@ export default function Home() {
 
   const header = (
     <View style={{ gap: 20, paddingBottom: 8 }}>
-      <Section
-        title={t('home.nowReading')}
-        action={
-          <AppText variant="caption" onPress={() => router.push('/(tabs)/library')} style={{ color: colors.text, fontWeight: '700', textDecorationLine: 'underline' }}>
-            {t('home.seeLibrary')}
-          </AppText>
-        }
-      >
+      <Section title={t('home.nowReading')}>
         {data?.reading.length ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12 }}>
             {data.reading.map((e) => {

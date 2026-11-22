@@ -2,7 +2,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, Pressable, View } from 'react-native';
 import { BookPickerModal } from '@/components/BookPickerModal';
-import { AppText, Avatar, Badge, BookCover, Button, Card, EmptyState, ErrorState, Loading, Row, Screen, Section } from '@/components/ui';
+import { AppText, Avatar, Badge, BookCover, Button, Card, EmptyState, ErrorState, Loading, Row, Screen, Section, TrashButton } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { ensureBook } from '@/lib/books';
 import { authorLine, fmtDateTime } from '@/lib/format';
@@ -199,12 +199,7 @@ export default function RoundScreen() {
                 />
               ) : null}
               {phase === 'nominating' && n.nominated_by === user!.id ? (
-                <Button
-                  small
-                  variant="ghost"
-                  title={t('common.delete')}
-                  onPress={() => guard(() => supabase.from('round_nominations').delete().eq('id', n.id))}
-                />
+                <TrashButton label={t('common.delete')} onPress={() => guard(() => supabase.from('round_nominations').delete().eq('id', n.id))} />
               ) : null}
             </Card>
           );

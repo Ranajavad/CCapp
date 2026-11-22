@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Alert, Pressable, Share, View } from 'react-native';
 import { BookPickerModal } from '@/components/BookPickerModal';
-import { AppText, Avatar, Badge, BookCover, Button, Card, ErrorState, Loading, Row, Screen, Section } from '@/components/ui';
+import { AppText, Avatar, Badge, BookCover, Button, Card, ErrorState, Loading, Row, Screen, Section, TrashButton } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { ensureBook } from '@/lib/books';
 import { fmtDateTime, timeAgo } from '@/lib/format';
@@ -14,6 +14,7 @@ import { useTheme } from '@/lib/theme';
 import { Book, Club, Meeting, Round, roundPhase } from '@/lib/types';
 
 type Member = { user_id: string; role: 'owner' | 'member'; profiles: { display_name: string; avatar_url?: string | null } | null };
+type Friendship = { id: string; requester_id: string; addressee_id: string; status: 'pending' | 'accepted' };
 type PreviousRead = { id: string; replaced_at: string; books: Book | null };
 type Announcement = { id: string; kind: string; body: string; created_at: string; books: Book | null };
 
@@ -28,7 +29,7 @@ export default function ClubOverview() {
 
   const { data, loading, error, reload, refreshing, refresh } = useData(async () => {
     await supabase.rpc('close_due_rounds');
-    const [club, members, rounds, meeting, news, previous] = await Promise.all([
+    const [club, members, rounds, meeting, news, previous, friendships] = await Promise.all([
       supabase.from('clubs').select('*, books:current_book_id(*)').eq('id', id).maybeSingle(),
       supabase.from('club_members').select('user_id,role,profiles:user_id(display_name,avatar_url)').eq('club_id', id).order('joined_at'),
       supabase.from('club_rounds').select('*').eq('club_id', id).order('created_at', { ascending: false }).limit(5),
@@ -51,6 +52,7 @@ export default function ClubOverview() {
         .select('id,replaced_at,books:book_id(*)')
         .eq('club_id', id)
         .order('replaced_at', { ascending: false }),
+      supabase.from('friendships').select('id,requester_id,addressee_id,status'),
     ]);
     if (club.error) throw club.error;
     return {
@@ -60,6 +62,7 @@ export default function ClubOverview() {
       nextMeeting: ((meeting.data ?? [])[0] ?? null) as unknown as Meeting | null,
       news: (news.data ?? []) as unknown as Announcement[],
       previous: (previous.data ?? []) as unknown as PreviousRead[],
+      friendships: (friendships.data ?? []) as Friendship[],
     };
   }, [id]);
 
@@ -67,9 +70,32 @@ export default function ClubOverview() {
   if (error || !data) return <ErrorState message={error ?? ''} onRetry={reload} />;
   if (!data.club) return <ErrorState message={t('common.notFound')} />;
 
-  const { club, members, rounds, nextMeeting, news, previous } = data;
+  const { club, members, rounds, nextMeeting, news, previous, friendships } = data;
   const isOwner = club.owner_id === user!.id;
   const activeRound = rounds.find((r) => roundPhase(r) !== 'closed');
+
+  const friendStatus = (otherId: string) => {
+    const f = friendships.find(
+      (x) => (x.requester_id === user!.id && x.addressee_id === otherId) || (x.addressee_id === user!.id && x.requester_id === otherId),
+    );
+    if (!f) return 'none' as const;
+    if (f.status === 'accepted') return 'friends' as const;
+    return f.requester_id === user!.id ? ('requested' as const) : ('incoming' as const);
+  };
+
+  const addFriend = async (otherId: string) => {
+    const { error } = await supabase.from('friendships').insert({ requester_id: user!.id, addressee_id: otherId });
+    if (error) Alert.alert(t('common.error'), error.message);
+    else reload();
+  };
+
+  const acceptFriend = async (otherId: string) => {
+    const f = friendships.find((x) => x.requester_id === otherId && x.addressee_id === user!.id);
+    if (!f) return;
+    const { error } = await supabase.from('friendships').update({ status: 'accepted' }).eq('id', f.id);
+    if (error) Alert.alert(t('common.error'), error.message);
+    else reload();
+  };
 
   const shareCode = () =>
     Share.share({ message: t('clubs.shareMessage', { name: club.name, code: club.join_code }) });
@@ -138,7 +164,7 @@ export default function ClubOverview() {
           <Button
             style={{ flex: 1 }}
             small
-            icon="sparkles-outline"
+            icon="robot-outline"
             title={t('club.discussion')}
             onPress={() => router.push(book ? `/discussion?book=${encodeURIComponent(book.external_id)}&club=${club.id}` : '/discussion')}
           />
@@ -243,17 +269,24 @@ export default function ClubOverview() {
       </Section>
 
       <Section title={t('club.members', { n: members.length })}>
-        {members.map((m) => (
-          <Row key={m.user_id}>
-            <Avatar name={m.profiles?.display_name ?? '?'} url={m.profiles?.avatar_url} size={32} />
-            <AppText style={{ flex: 1 }}>{m.profiles?.display_name}</AppText>
-            {m.role === 'owner' ? <Badge label={t('club.owner')} /> : null}
-          </Row>
-        ))}
+        {members.map((m) => {
+          const fs = m.user_id === user!.id ? null : friendStatus(m.user_id);
+          return (
+            <Row key={m.user_id}>
+              <Avatar name={m.profiles?.display_name ?? '?'} url={m.profiles?.avatar_url} size={32} />
+              <AppText style={{ flex: 1 }}>{m.profiles?.display_name}</AppText>
+              {m.role === 'owner' ? <Badge label={t('club.owner')} /> : null}
+              {fs === 'none' ? <Button small variant="secondary" title={t('friends.add')} onPress={() => addFriend(m.user_id)} /> : null}
+              {fs === 'incoming' ? <Button small title={t('friends.accept')} onPress={() => acceptFriend(m.user_id)} /> : null}
+              {fs === 'requested' ? <Badge label={t('friends.requested')} /> : null}
+              {fs === 'friends' ? <Badge label={t('friends.friend')} /> : null}
+            </Row>
+          );
+        })}
       </Section>
 
       {isOwner ? (
-        <Button variant="ghost" title={t('clubs.delete')} onPress={del} />
+        <TrashButton wide label={t('clubs.delete')} onPress={del} />
       ) : (
         <Button variant="ghost" title={t('clubs.leave')} onPress={leave} />
       )}

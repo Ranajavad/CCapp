@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
-import { AppText, BookCover, Button, Card, EmptyState, ErrorState, Loading, Row } from '@/components/ui';
+import { AppText, BookCover, Button, Card, EmptyState, ErrorState, Loading, RobotBadge, Row } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { useData } from '@/lib/hooks';
 import { useT } from '@/lib/i18n';
@@ -44,7 +44,7 @@ export default function Clubs() {
 
       <Card onPress={() => router.push('/discussion')} style={{ backgroundColor: colors.surfaceAlt }}>
         <Row>
-          <AppText style={{ fontSize: 26 }}>✨</AppText>
+          <RobotBadge size={44} />
           <View style={{ flex: 1 }}>
             <AppText variant="subheading">{t('clubs.aiCard')}</AppText>
             <AppText variant="caption" muted>

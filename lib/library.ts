@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
 import type { LibraryEntry, ShelfStatus } from './types';
 
@@ -55,4 +56,33 @@ export function statusPatch(
     if (pageCount) patch.current_page = pageCount;
   }
   return patch;
+}
+
+/**
+ * Puts each of the user's clubs' current read on their shelf as "reading". This runs when Home opens,
+ * so members get the book even if the database trigger (migration 0006) isn't installed or they were
+ * offline. Each club book is added once per device: if the member later removes it, it stays removed.
+ */
+export async function syncClubCurrentReads(userId: string) {
+  try {
+    const { data: clubs } = await supabase.from('clubs').select('id,current_book_id').not('current_book_id', 'is', null);
+    for (const c of clubs ?? []) {
+      const key = `clubRead:${userId}:${c.id}:${c.current_book_id}`;
+      if (await AsyncStorage.getItem(key)) continue;
+      const { data: existing } = await supabase
+        .from('library_entries')
+        .select('id,status')
+        .eq('user_id', userId)
+        .eq('book_id', c.current_book_id)
+        .maybeSingle();
+      if (!existing) {
+        await supabase.from('library_entries').insert({ user_id: userId, book_id: c.current_book_id, status: 'reading', started_at: new Date().toISOString() });
+      } else if (existing.status === 'wishlist') {
+        await supabase.from('library_entries').update({ status: 'reading', started_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', existing.id);
+      }
+      await AsyncStorage.setItem(key, '1');
+    }
+  } catch {
+    // Not critical: it is retried the next time Home opens.
+  }
 }

@@ -6,16 +6,14 @@ type StackSpec = NonNullable<StackNavigationOptions['transitionSpec']>['open'];
 /**
  * "Turning a page" transitions.
  *
- * Every page is hinged on one vertical edge (like a spine) and swings around it in 3D with
- * perspective. Pushing a screen turns the new page in from the right; going back lifts it away
+ * Every page is hinged on one vertical edge (like a spine) and swings around it (drawn flat, see below). Pushing a screen turns the new page in from the right; going back lifts it away
  * again, so the motion always matches the direction of travel.
  *
  * Only `transform` is animated on the pages themselves, so it runs on the native driver.
  *
- * Pushed screens use the full 3D turn; tabs use a flat version (see createTabPageTurn below).
+ * Pushed screens and tabs both use flat transforms so nothing is ever drawn soft at rest.
  */
 
-const PERSPECTIVE = 1400;
 const NATIVE = Platform.OS !== 'web';
 const easing = Easing.bezier(0.25, 0.8, 0.25, 1);
 
@@ -35,11 +33,15 @@ export const forPageTurn: StackCardStyleInterpolator = ({ current, next, layouts
     next ? next.progress.interpolate({ inputRange: [0, 1], outputRange: [0, 1], extrapolate: 'clamp' }) : 0,
   );
 
-  const rotateY = progress.interpolate({
-    inputRange: [0, 1, 2],
-    outputRange: ['88deg', '0deg', '0deg'],
+  // Flat (2D) page turn: squeeze the page horizontally around its hinge, like cos(angle) of a page
+  // turned 88°, 66°, 44°, 22° and 0° away from flat. A real 3D rotateY/perspective transform left
+  // iPhone screens soft ("blurry") until touched, even at rest; flat transforms are exact at rest.
+  const scaleX = progress.interpolate({
+    inputRange: [0, 0.25, 0.5, 0.75, 1, 2],
+    outputRange: [0.035, 0.407, 0.719, 0.927, 1, 1],
     extrapolate: 'clamp',
   });
+
   // The page we leave behind slides a little to the left and settles back, as pages in a stack do.
   const slide = progress.interpolate({
     inputRange: [0, 1, 2],
@@ -66,12 +68,11 @@ export const forPageTurn: StackCardStyleInterpolator = ({ current, next, layouts
   return {
     cardStyle: {
       transform: [
-        { perspective: PERSPECTIVE },
         { translateX: slide },
         { scale },
-        // Rotate around the right edge: move the hinge to the origin, rotate, move it back.
+        // Squeeze around the right edge: move the hinge to the origin, squeeze, move it back.
         { translateX: w / 2 },
-        { rotateY },
+        { scaleX },
         { translateX: -w / 2 },
       ],
     },

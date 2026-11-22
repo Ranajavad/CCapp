@@ -14,12 +14,25 @@ export default function Register() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [repeat, setRepeat] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirmSent, setConfirmSent] = useState(false);
 
+  // Password rules, checked live as the user types.
+  const rules = [
+    { ok: password.length >= 8, label: t('auth.ruleLength') },
+    { ok: /[A-Za-z]/.test(password) && /\d/.test(password), label: t('auth.ruleLetterNumber') },
+    { ok: password.length > 0 && password === repeat, label: t('auth.ruleMatch') },
+  ];
+  const valid = rules.every((r) => r.ok);
+
   const submit = async () => {
-    if (password.length < 8) {
-      Alert.alert(t('common.error'), t('auth.passwordShort'));
+    if (password.length < 8 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
+      Alert.alert(t('common.error'), t('auth.passwordWeak'));
+      return;
+    }
+    if (password !== repeat) {
+      Alert.alert(t('common.error'), t('auth.passwordMismatch'));
       return;
     }
     setBusy(true);
@@ -63,10 +76,22 @@ export default function Register() {
         secureTextEntry
         autoComplete="new-password"
       />
-      <AppText variant="caption" muted>
-        {t('auth.passwordHint')}
-      </AppText>
-      <Button title={t('auth.register')} onPress={submit} loading={busy} disabled={!name.trim() || !email || !password} />
+      <Input
+        label={t('auth.repeatPassword')}
+        value={repeat}
+        onChangeText={setRepeat}
+        secureTextEntry
+        autoComplete="new-password"
+        error={repeat.length > 0 && password !== repeat ? t('auth.passwordMismatch') : null}
+      />
+      <View style={{ gap: 4 }}>
+        {rules.map((r) => (
+          <AppText key={r.label} variant="caption" style={{ color: r.ok ? colors.success : colors.textMuted }}>
+            {r.ok ? '✓' : '○'} {r.label}
+          </AppText>
+        ))}
+      </View>
+      <Button title={t('auth.register')} onPress={submit} loading={busy} disabled={!name.trim() || !email || !valid} />
 
       <SocialAuth mode="register" />
 

@@ -3,6 +3,7 @@ import { Tabs } from 'expo-router';
 import React, { useMemo } from 'react';
 import { Text, useWindowDimensions, View } from 'react-native';
 import type { ColorValue } from 'react-native';
+import { NotificationBell } from '@/components/NotificationBell';
 import { Logo } from '@/components/ui';
 import { useT } from '@/lib/i18n';
 import { createTabPageTurn, tabPageTurnSpec } from '@/lib/pageTurn';
@@ -51,6 +52,7 @@ export default function TabsLayout() {
               <Text style={{ fontFamily: fonts.serif, fontWeight: '700', fontSize: 19, color: colors.text }}>Chapters & Chatters</Text>
             </View>
           ),
+          headerRight: () => <NotificationBell />,
           tabBarIcon: icon('home', 'home-outline'),
         }}
       />

@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
 import {
   ActivityIndicator,
@@ -178,7 +178,7 @@ export function Button({
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
   loading?: boolean;
   disabled?: boolean;
-  icon?: IconName;
+  icon?: IconName | 'robot-outline'; // 'robot-outline' is the AI helper icon (not in Ionicons)
   small?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
@@ -210,7 +210,11 @@ export function Button({
         <ActivityIndicator color={fg} />
       ) : (
         <>
-          {icon ? <Ionicons name={icon} size={small ? 16 : 18} color={fg} /> : null}
+          {icon === 'robot-outline' ? (
+            <MaterialCommunityIcons name="robot-outline" size={small ? 18 : 20} color={fg} />
+          ) : icon ? (
+            <Ionicons name={icon} size={small ? 16 : 18} color={fg} />
+          ) : null}
           <Text style={{ color: fg, fontWeight: '700', fontSize: small ? 13 : 15 }}>{title}</Text>
         </>
       )}
@@ -513,5 +517,35 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
       body={message}
       action={onRetry ? <Button title={t('common.retry')} onPress={onRetry} small variant="secondary" /> : undefined}
     />
+  );
+}
+
+/** Round robot badge for the AI discussion generator. */
+export function RobotBadge({ size = 44 }: { size?: number }) {
+  const { colors } = useTheme();
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' }}>
+      <MaterialCommunityIcons name="robot-happy-outline" size={size * 0.58} color={colors.onPrimary} />
+    </View>
+  );
+}
+
+/** Delete = a rubbish bin icon everywhere. `label` is only read aloud (accessibility). */
+export function TrashButton({ onPress, label, size = 22, wide = false }: { onPress?: () => void; label: string; size?: number; wide?: boolean }) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={10}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => ({
+        opacity: pressed ? 0.6 : 1,
+        padding: wide ? 14 : 4,
+        alignSelf: wide ? 'center' : undefined,
+      })}
+    >
+      <Ionicons name="trash-outline" size={size} color={colors.danger} />
+    </Pressable>
   );
 }

@@ -1,6 +1,8 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
+import * as SecureStore from 'expo-secure-store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { supabase } from './supabase';
 
@@ -97,16 +99,6 @@ export async function signInWithGoogle() {
   throw new Error(url.searchParams.get('error_description') ?? 'Google sign-in failed');
 }
 
-export async function sendPhoneCode(phone: string) {
-  const { error } = await supabase.auth.signInWithOtp({ phone });
-  if (error) throw error;
-}
-
-export async function verifyPhoneCode(phone: string, token: string) {
-  const { error } = await supabase.auth.verifyOtp({ phone, token, type: 'sms' });
-  if (error) throw error;
-}
-
 export async function sendPasswordResetCode(email: string) {
   const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
   if (error) throw error;
@@ -120,6 +112,61 @@ export async function resetPasswordWithCode(email: string, code: string, newPass
   if (e2) throw e2;
 }
 
+const REMEMBERED_KEY = 'rememberedAccount';
+
+export type RememberedAccount = { name: string; avatar: string | null; email: string; refreshToken: string };
+
+// The refresh token lets the user come straight back in, so keep it in the device's secure storage.
+const store = {
+  get: (k: string) => (Platform.OS === 'web' ? AsyncStorage.getItem(k) : SecureStore.getItemAsync(k)),
+  set: (k: string, v: string) => (Platform.OS === 'web' ? AsyncStorage.setItem(k, v) : SecureStore.setItemAsync(k, v)),
+  del: (k: string) => (Platform.OS === 'web' ? AsyncStorage.removeItem(k) : SecureStore.deleteItemAsync(k)),
+};
+
+/** The account that logged out last on this device (shown on the log-in page for a one-tap return). */
+export async function getRememberedAccount(): Promise<RememberedAccount | null> {
+  try {
+    const raw = await store.get(REMEMBERED_KEY);
+    return raw ? (JSON.parse(raw) as RememberedAccount) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function forgetRememberedAccount() {
+  try {
+    await store.del(REMEMBERED_KEY);
+  } catch {}
+}
+
+/** One-tap log-in for the remembered account. Forgets it if the saved login has expired. */
+export async function signInRemembered(acc: RememberedAccount) {
+  const { error } = await supabase.auth.refreshSession({ refresh_token: acc.refreshToken });
+  if (error) {
+    await forgetRememberedAccount();
+    throw error;
+  }
+}
+
 export async function signOut() {
-  await supabase.auth.signOut();
+  try {
+    const { data } = await supabase.auth.getSession();
+    const session = data.session;
+    const u = session?.user;
+    if (session && u) {
+      const { data: p } = await supabase.from('profiles').select('display_name,avatar_url').eq('id', u.id).maybeSingle();
+      const name =
+        String(p?.display_name ?? u.user_metadata?.full_name ?? u.user_metadata?.name ?? '').trim() ||
+        (u.email ? u.email.split('@')[0] : '');
+      const acc: RememberedAccount = {
+        name,
+        avatar: p?.avatar_url ?? null,
+        email: u.email ?? '',
+        refreshToken: session.refresh_token,
+      };
+      await store.set(REMEMBERED_KEY, JSON.stringify(acc));
+    }
+  } catch {}
+  const { error } = await supabase.auth.signOut({ scope: 'local' });
+  if (error) console.warn('Sign out:', error.message);
 }

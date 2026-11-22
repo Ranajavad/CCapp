@@ -1,7 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Linking, View } from 'react-native';
-import { AppText, Badge, BookCover, Button, Card, ErrorState, Input, Loading, Row, Screen, Section, Segmented, Stars } from '@/components/ui';
+import { AppText, Badge, BookCover, Button, Card, ErrorState, IconButton, Input, Loading, Row, Screen, Section, Segmented, Stars, TrashButton } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { ensureBook, resolveBook } from '@/lib/books';
 import { authorLine, fmtDate } from '@/lib/format';
@@ -25,15 +25,19 @@ export default function BookDetail() {
     const book = await resolveBook(externalId);
     let entry: LibraryEntry | null = null;
     let notes: BookNote[] = [];
+    let sharedCount = 0;
     if (book.id) {
-      const [e, n] = await Promise.all([
+      const [e, n, shared] = await Promise.all([
         supabase.from('library_entries').select('*').eq('user_id', user!.id).eq('book_id', book.id).maybeSingle(),
         supabase.from('book_notes').select('*').eq('user_id', user!.id).eq('book_id', book.id).order('created_at', { ascending: false }),
+        // Has this reader's review been shared with friends?
+        supabase.from('activity').select('id', { count: 'exact', head: true }).eq('user_id', user!.id).eq('book_id', book.id).eq('type', 'review'),
       ]);
       entry = (e.data as LibraryEntry) ?? null;
       notes = (n.data ?? []) as BookNote[];
+      sharedCount = shared.count ?? 0;
     }
-    return { book, entry, notes };
+    return { book, entry, notes, shared: sharedCount > 0 };
   }, [externalId, user?.id]);
 
   const [busy, setBusy] = useState(false);
@@ -53,7 +57,7 @@ export default function BookDetail() {
   if (loading) return <Loading />;
   if (error || !data) return <ErrorState message={error ?? 'Not found'} onRetry={reload} />;
 
-  const { book, notes } = data;
+  const { book, notes, shared } = data;
 
   const run = async (fn: () => Promise<void>) => {
     setBusy(true);
@@ -86,10 +90,29 @@ export default function BookDetail() {
       await upsertEntry(user!.id, bookId, entry ? { rating: n } : { rating: n, ...statusPatch('read', null, book.page_count) });
     });
 
+  const clearRating = () =>
+    run(async () => {
+      if (entry) await upsertEntry(user!.id, entry.book_id, { rating: null });
+    });
+
+  const unshareReview = () =>
+    run(async () => {
+      const bookId = await ensureBook(book);
+      const { error } = await supabase.from('activity').delete().eq('user_id', user!.id).eq('book_id', bookId).eq('type', 'review');
+      if (error) throw error;
+    });
+
   const savePage = () =>
     run(async () => {
       const bookId = await ensureBook(book);
-      const n = Math.max(0, parseInt(page, 10) || 0);
+      // A page can't be past the last page of the book.
+      const n = Math.min(Math.max(0, parseInt(page, 10) || 0), book.page_count ?? Infinity);
+      if (book.page_count && n >= book.page_count && entry?.status !== 'read') {
+        // Reached the last page: the book moves to "Read" (and friends see that it was finished).
+        await upsertEntry(user!.id, bookId, statusPatch('read', entry, book.page_count));
+        await postActivity(user!.id, bookId, 'finished', null, entry?.rating);
+        return;
+      }
       await upsertEntry(user!.id, bookId, { status: entry?.status ?? 'reading', current_page: n });
     });
 
@@ -98,7 +121,11 @@ export default function BookDetail() {
       const bookId = await ensureBook(book);
       const text = review.trim();
       await upsertEntry(user!.id, bookId, entry ? { review: text } : { review: text, ...statusPatch('read', null, book.page_count) });
-      if (text) await postActivity(user!.id, bookId, 'review', text, entry?.rating);
+      if (text) {
+        // Sharing again replaces the earlier shared review instead of adding a second one.
+        await supabase.from('activity').delete().eq('user_id', user!.id).eq('book_id', bookId).eq('type', 'review');
+        await postActivity(user!.id, bookId, 'review', text, entry?.rating);
+      }
     });
 
   const addNote = () =>
@@ -166,7 +193,17 @@ export default function BookDetail() {
             <AppText variant="subheading">{t('book.progress')}</AppText>
             <Row>
               <View style={{ flex: 1 }}>
-                <Input value={page} onChangeText={setPage} keyboardType="number-pad" placeholder={t('book.currentPage')} />
+                <Input
+                  value={page}
+                  onChangeText={(v) => {
+                    const digits = v.replace(/\D/g, '');
+                    const n = parseInt(digits, 10);
+                    // Typing a number above the book's page count snaps back to the last page.
+                    setPage(book.page_count && n > book.page_count ? String(book.page_count) : digits);
+                  }}
+                  keyboardType="number-pad"
+                  placeholder={t('book.currentPage')}
+                />
               </View>
               {book.page_count ? <AppText muted>/ {book.page_count}</AppText> : null}
               <Button small title={t('common.save')} onPress={savePage} loading={busy} />
@@ -176,7 +213,10 @@ export default function BookDetail() {
 
         <Card>
           <AppText variant="subheading">{t('book.yourRating')}</AppText>
-          <Stars value={entry?.rating} onChange={rate} size={34} />
+          <Row>
+            <Stars value={entry?.rating} onChange={rate} size={34} />
+            {entry?.rating ? <IconButton icon="close-circle-outline" onPress={clearRating} color={colors.textMuted} size={26} /> : null}
+          </Row>
           <Input
             value={review}
             onChangeText={setReview}
@@ -192,9 +232,13 @@ export default function BookDetail() {
             loading={busy}
             disabled={!review.trim()}
           />
-          <AppText variant="caption" muted>
-            {t('book.shareHint')}
-          </AppText>
+          {shared ? (
+            <Button small variant="ghost" icon="arrow-undo-outline" title={t('book.unshareReview')} onPress={unshareReview} loading={busy} />
+          ) : (
+            <AppText variant="caption" muted>
+              {t('book.shareHint')}
+            </AppText>
+          )}
         </Card>
 
         {description ? (
@@ -236,9 +280,7 @@ export default function BookDetail() {
                     {n.page ? <Badge label={t('book.pageN', { n: n.page })} /> : null}
                     {n.chapter ? <Badge label={n.chapter} /> : null}
                   </Row>
-                  <AppText variant="caption" muted onPress={() => deleteNote(n)}>
-                    {t('common.delete')}
-                  </AppText>
+                  <TrashButton label={t('common.delete')} onPress={() => deleteNote(n)} />
                 </Row>
                 <AppText>{n.body}</AppText>
               </Card>
@@ -249,7 +291,7 @@ export default function BookDetail() {
         <Section title={t('book.more')}>
           <Button
             variant="secondary"
-            icon="sparkles-outline"
+            icon="robot-outline"
             title={t('book.discussion')}
             onPress={() => router.push(`/discussion?book=${encodeURIComponent(book.external_id)}`)}
           />
@@ -266,7 +308,7 @@ export default function BookDetail() {
               />
             ))}
           </Row>
-          {entry ? <Button variant="ghost" title={t('book.remove')} onPress={remove} /> : null}
+          {entry ? <TrashButton wide label={t('book.remove')} onPress={remove} /> : null}
         </Section>
     </Screen>
   );

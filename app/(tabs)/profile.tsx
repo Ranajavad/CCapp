@@ -1,9 +1,8 @@
-import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Alert, Modal, Pressable, ScrollView, Switch, View } from 'react-native';
-import { AppText, Avatar, Button, Card, Input, Row, Screen } from '@/components/ui';
+import { AppText, Avatar, Button, Input, Row, Screen } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
 import { AVATARS, avatarIdFrom, avatarValue } from '@/lib/avatars';
 import { signOut } from '@/lib/authActions';
@@ -121,12 +120,22 @@ export default function Profile() {
         </View>
       </Row>
 
-      <Card>
-        <Input label={t('profile.displayName')} value={name} onChangeText={setName} />
-        <Button small title={t('common.save')} onPress={saveName} loading={saving} disabled={!name.trim() || name.trim() === profile?.display_name} />
-      </Card>
-
-      <Button variant="secondary" icon="people-outline" title={t('profile.friends')} onPress={() => router.push('/friends')} />
+      <Row>
+        <View style={{ flex: 1 }}>
+          <Input value={name} onChangeText={setName} placeholder={t('profile.displayName')} accessibilityLabel={t('profile.displayName')} />
+        </View>
+        {name.trim() && name.trim() !== profile?.display_name ? (
+          <Pressable
+            onPress={saveName}
+            disabled={saving}
+            accessibilityRole="button"
+            accessibilityLabel={t('common.save')}
+            style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', opacity: saving ? 0.6 : 1 }}
+          >
+            <Ionicons name="checkmark" size={24} color={colors.onPrimary} />
+          </Pressable>
+        ) : null}
+      </Row>
 
       <Modal transparent animationType="slide" visible={avatarOpen} onRequestClose={() => setAvatarOpen(false)}>
         <Pressable onPress={() => setAvatarOpen(false)} style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
@@ -204,10 +213,30 @@ export default function Profile() {
         </Pressable>
       </Modal>
 
-      <Button variant="danger" icon="log-out-outline" title={t('profile.logout')} onPress={() => signOut()} />
-      <AppText variant="caption" muted style={{ textAlign: 'center' }}>
-        Chapters & Chatters · v{Constants.expoConfig?.version ?? '1.0.0'}
-      </AppText>
+      <View style={{ marginTop: 48 }}>
+        <Button variant="secondary" icon="people-outline" title={t('profile.friends')} onPress={() => router.push('/friends')} />
+      </View>
+
+      {/* Log out sits well below the rest so it is not hit by accident. */}
+      <Pressable
+        onPress={async () => {
+          await signOut();
+          router.replace('/(auth)/login');
+        }}
+        accessibilityRole="button"
+        style={({ pressed }) => ({
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          marginTop: 8,
+          padding: 12,
+          opacity: pressed ? 0.6 : 1,
+        })}
+      >
+        <Ionicons name="log-out-outline" size={20} color={colors.danger} />
+        <AppText style={{ color: colors.danger, fontWeight: '600' }}>{t('profile.logout')}</AppText>
+      </Pressable>
     </Screen>
   );
 }
