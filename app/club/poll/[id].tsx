@@ -10,7 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/lib/theme';
 
 type Option = { id: string; starts_at: string };
-type PollVote = { option_id: string; user_id: string; profiles: { display_name: string } | null };
+type PollVote = { option_id: string; user_id: string; profiles: { display_name: string; avatar_url?: string | null } | null };
 
 export default function PollScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -29,7 +29,7 @@ export default function PollScreen() {
     ]);
     const ids = (options.data ?? []).map((o: any) => o.id);
     const votes = ids.length
-      ? await supabase.from('date_poll_votes').select('option_id,user_id,profiles:user_id(display_name)').in('option_id', ids)
+      ? await supabase.from('date_poll_votes').select('option_id,user_id,profiles:user_id(display_name,avatar_url)').in('option_id', ids)
       : { data: [] as any[] };
     return {
       poll: poll as { id: string; club_id: string; title: string; status: 'open' | 'closed'; closes_at: string | null; created_by: string; meeting_id: string | null },
@@ -93,7 +93,7 @@ export default function PollScreen() {
             {ov.length ? (
               <Row gap={4} style={{ flexWrap: 'wrap' }}>
                 {ov.map((v) => (
-                  <Avatar key={v.user_id} name={v.profiles?.display_name ?? '?'} size={24} />
+                  <Avatar key={v.user_id} name={v.profiles?.display_name ?? '?'} url={v.profiles?.avatar_url} size={24} />
                 ))}
               </Row>
             ) : null}

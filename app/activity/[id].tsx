@@ -9,7 +9,7 @@ import { useData } from '@/lib/hooks';
 import { useT } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 
-type CommentRow = { id: string; user_id: string; body: string; created_at: string; profiles: { display_name: string } | null };
+type CommentRow = { id: string; user_id: string; body: string; created_at: string; profiles: { display_name: string; avatar_url?: string | null } | null };
 
 export default function ActivityDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -23,7 +23,7 @@ export default function ActivityDetail() {
       supabase.from('activity').select(ACTIVITY_SELECT).eq('id', id).maybeSingle(),
       supabase
         .from('comments')
-        .select('id,user_id,body,created_at,profiles:user_id(display_name)')
+        .select('id,user_id,body,created_at,profiles:user_id(display_name,avatar_url)')
         .eq('activity_id', id)
         .order('created_at', { ascending: true }),
     ]);
@@ -58,7 +58,7 @@ export default function ActivityDetail() {
       {data.comments.map((c) => (
         <Card key={c.id}>
           <Row style={{ alignItems: 'flex-start' }}>
-            <Avatar name={c.profiles?.display_name ?? '?'} size={30} />
+            <Avatar name={c.profiles?.display_name ?? '?'} url={c.profiles?.avatar_url} size={30} />
             <View style={{ flex: 1 }}>
               <AppText variant="caption" style={{ fontWeight: '700' }}>
                 {c.user_id === user!.id ? t('common.you') : c.profiles?.display_name}

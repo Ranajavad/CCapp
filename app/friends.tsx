@@ -12,20 +12,20 @@ type Friendship = {
   requester_id: string;
   addressee_id: string;
   status: 'pending' | 'accepted';
-  requester: { id: string; display_name: string } | null;
-  addressee: { id: string; display_name: string } | null;
+  requester: { id: string; display_name: string; avatar_url?: string | null } | null;
+  addressee: { id: string; display_name: string; avatar_url?: string | null } | null;
 };
 
 export default function Friends() {
   const { t } = useT();
   const { user } = useAuth();
   const [q, setQ] = useState('');
-  const [found, setFound] = useState<{ id: string; display_name: string }[] | null>(null);
+  const [found, setFound] = useState<{ id: string; display_name: string; avatar_url?: string | null }[] | null>(null);
 
   const { data, reload } = useData(async () => {
     const { data, error } = await supabase
       .from('friendships')
-      .select('id,requester_id,addressee_id,status,requester:requester_id(id,display_name),addressee:addressee_id(id,display_name)');
+      .select('id,requester_id,addressee_id,status,requester:requester_id(id,display_name,avatar_url),addressee:addressee_id(id,display_name,avatar_url)');
     if (error) throw error;
     return (data ?? []) as unknown as Friendship[];
   }, [user?.id]);
@@ -41,7 +41,7 @@ export default function Friends() {
     if (term.length < 2) return;
     const { data, error } = await supabase
       .from('profiles')
-      .select('id,display_name')
+      .select('id,display_name,avatar_url')
       .ilike('display_name', `%${term.replace(/[%_]/g, '')}%`)
       .neq('id', user!.id)
       .limit(20);
@@ -73,7 +73,7 @@ export default function Friends() {
           {found.map((p) => (
             <Card key={p.id}>
               <Row>
-                <Avatar name={p.display_name} />
+                <Avatar name={p.display_name} url={p.avatar_url} />
                 <AppText style={{ flex: 1 }}>{p.display_name}</AppText>
                 {knownIds.has(p.id) ? (
                   <AppText variant="caption" muted>
@@ -97,7 +97,7 @@ export default function Friends() {
           {incoming.map((f) => (
             <Card key={f.id}>
               <Row>
-                <Avatar name={f.requester?.display_name ?? '?'} />
+                <Avatar name={f.requester?.display_name ?? '?'} url={f.requester?.avatar_url} />
                 <AppText style={{ flex: 1 }}>{f.requester?.display_name}</AppText>
                 <Button small title={t('friends.accept')} onPress={() => act(() => supabase.from('friendships').update({ status: 'accepted' }).eq('id', f.id))} />
                 <Button small variant="ghost" title={t('friends.decline')} onPress={() => act(() => supabase.from('friendships').delete().eq('id', f.id))} />
@@ -112,7 +112,7 @@ export default function Friends() {
         {friends.map((f) => (
           <Card key={f.id}>
             <Row>
-              <Avatar name={other(f)?.display_name ?? '?'} />
+              <Avatar name={other(f)?.display_name ?? '?'} url={other(f)?.avatar_url} />
               <AppText style={{ flex: 1 }}>{other(f)?.display_name}</AppText>
               <AppText variant="caption" muted onPress={() => act(() => supabase.from('friendships').delete().eq('id', f.id))}>
                 {t('friends.remove')}

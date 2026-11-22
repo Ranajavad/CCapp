@@ -6,7 +6,7 @@ import { initReactI18next, useTranslation } from 'react-i18next';
 import { en, nb } from './translations';
 
 export type Lang = 'en' | 'nb';
-export type LangPref = 'system' | Lang;
+export type LangPref = Lang;
 export type TKey = keyof typeof en;
 
 const KEY = 'cc.language';
@@ -33,15 +33,16 @@ i18n.use(initReactI18next).init({
 export async function loadLanguagePref(): Promise<LangPref> {
   try {
     const v = await AsyncStorage.getItem(KEY);
-    if (v === 'en' || v === 'nb' || v === 'system') return v;
+    if (v === 'en' || v === 'nb') return v;
   } catch {
     // ignore
   }
-  return 'system';
+  // Nothing chosen yet (or a legacy 'system' value): start from the device language.
+  return deviceLanguage();
 }
 
 export async function applyLanguagePref(pref: LangPref) {
-  await i18n.changeLanguage(pref === 'system' ? deviceLanguage() : pref);
+  await i18n.changeLanguage(pref);
 }
 
 export async function setLanguagePref(pref: LangPref) {

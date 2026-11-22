@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Modal, Pressable, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { searchBooks } from '@/lib/books';
 import { useDebounced } from '@/lib/hooks';
 import { useT } from '@/lib/i18n';
@@ -47,12 +47,24 @@ export function BookPickerModal({
   }, [dq]);
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
-        <View style={{ padding: 16, gap: 12, flex: 1 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <AppText variant="heading">{title ?? t('picker.title')}</AppText>
-            <Pressable onPress={onClose} hitSlop={10}>
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      {/* Modals live in a separate native hierarchy, so they need their own safe-area provider */}
+      <SafeAreaProvider>
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top', 'bottom', 'left', 'right']}>
+        <View style={{ padding: 16, paddingTop: 20, gap: 16, flex: 1 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              minHeight: 36,
+            }}
+          >
+            <AppText variant="heading" style={{ flex: 1 }} numberOfLines={1}>
+              {title ?? t('picker.title')}
+            </AppText>
+            <Pressable onPress={onClose} hitSlop={12}>
               <Ionicons name="close" size={26} color={colors.text} />
             </Pressable>
           </View>
@@ -80,6 +92,7 @@ export function BookPickerModal({
           />
         </View>
       </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }

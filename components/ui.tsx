@@ -378,7 +378,8 @@ export function Badge({ label, color }: { label: string; color?: string }) {
 // ---------------------------------------------------------------- Media
 const AVATAR_COLORS = ['#6B2D5C', '#2E7D5B', '#B5651D', '#3B5BA5', '#8E3B46', '#5B6B2D'];
 
-export function Avatar({ name, size = 36 }: { name: string; size?: number }) {
+export function Avatar({ name, url, size = 36 }: { name: string; url?: string | null; size?: number }) {
+  const [failed, setFailed] = React.useState(false);
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % AVATAR_COLORS.length;
   return (
@@ -390,9 +391,14 @@ export function Avatar({ name, size = 36 }: { name: string; size?: number }) {
         backgroundColor: AVATAR_COLORS[h],
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'hidden',
       }}
     >
-      <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: size * 0.38 }}>{initials(name)}</Text>
+      {url && !failed ? (
+        <Image source={{ uri: url }} style={{ width: size, height: size }} onError={() => setFailed(true)} />
+      ) : (
+        <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: size * 0.38 }}>{initials(name)}</Text>
+      )}
     </View>
   );
 }

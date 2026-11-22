@@ -15,7 +15,7 @@ export type ActivityItem = {
   body: string | null;
   rating: number | null;
   created_at: string;
-  profiles?: { display_name: string } | null;
+  profiles?: { display_name: string; avatar_url?: string | null } | null;
   books?: { external_id: string; title: string; authors: string[]; cover_url: string | null } | null;
   reactions?: { emoji: string; user_id: string }[];
   comments?: { count: number }[];
@@ -23,7 +23,7 @@ export type ActivityItem = {
 
 export const ACTIVITY_SELECT =
   'id,user_id,type,body,rating,created_at,' +
-  'profiles:user_id(display_name),' +
+  'profiles:user_id(display_name,avatar_url),' +
   'books:book_id(external_id,title,authors,cover_url),' +
   'reactions(emoji,user_id),comments(count)';
 
@@ -60,7 +60,7 @@ export function ActivityCard({
   return (
     <Card>
       <Row style={{ alignItems: 'flex-start' }}>
-        <Avatar name={item.profiles?.display_name ?? '?'} />
+        <Avatar name={item.profiles?.display_name ?? '?'} url={item.profiles?.avatar_url} />
         <View style={{ flex: 1 }}>
           <AppText variant="body" style={{ fontWeight: '600' }}>
             {t(sentenceKey, { name, title })}

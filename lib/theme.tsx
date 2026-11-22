@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { Platform, useColorScheme } from 'react-native';
 
-export type ThemeMode = 'system' | 'light' | 'dark';
+export type ThemeMode = 'light' | 'dark';
 
 export type Palette = {
   bg: string;
@@ -63,7 +63,7 @@ type ThemeCtx = {
 };
 
 const Ctx = createContext<ThemeCtx>({
-  mode: 'system',
+  mode: 'light',
   setMode: () => {},
   scheme: 'light',
   colors: light,
@@ -73,12 +73,14 @@ const KEY = 'cc.theme';
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const system = useColorScheme();
-  const [mode, setModeState] = useState<ThemeMode>('system');
+  // Until the user picks a mode, start from the device's current scheme.
+  // (A legacy stored value of 'system' is ignored for the same reason.)
+  const [mode, setModeState] = useState<ThemeMode>(system === 'dark' ? 'dark' : 'light');
 
   useEffect(() => {
     AsyncStorage.getItem(KEY)
       .then((v) => {
-        if (v === 'light' || v === 'dark' || v === 'system') setModeState(v);
+        if (v === 'light' || v === 'dark') setModeState(v);
       })
       .catch(() => {});
   }, []);
@@ -88,7 +90,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem(KEY, m).catch(() => {});
   }, []);
 
-  const scheme: 'light' | 'dark' = mode === 'system' ? (system === 'dark' ? 'dark' : 'light') : mode;
+  const scheme = mode;
   const value = useMemo(
     () => ({ mode, setMode, scheme, colors: scheme === 'dark' ? dark : light }),
     [mode, setMode, scheme],

@@ -35,6 +35,12 @@
     "plugins": [
       "expo-router",
       "expo-localization",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Chapters & Chatters needs access to your photos so you can choose a profile picture."
+        }
+      ],
       "expo-web-browser",
       "expo-apple-authentication",
       [

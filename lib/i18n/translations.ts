@@ -189,6 +189,7 @@ export const en = {
 
   // club overview
   'club.currentRead': 'Current read',
+  'club.previousReads': 'Previous reads',
   'club.noCurrent': 'No book yet. Start a voting round or choose one.',
   'club.discussion': 'Discussion questions',
   'club.choose': 'Choose book',
@@ -232,7 +233,7 @@ export const en = {
   'round.nowCurrent': 'Now the club’s current read.',
   'round.noWinner': 'This round closed without any nominations.',
   'round.nominate': 'Nominate a book',
-  'round.voteHint': 'Pick your favourite. You can change your vote until the deadline.',
+  'round.voteHint': 'Pick your favourite. Tap another book to change your vote, or tap your pick again to remove it.',
   'round.hiddenCounts': 'Results are hidden until voting closes.',
   'round.nominations': 'Nominated books ({{n}})',
   'round.noNominations': 'No books nominated yet',
@@ -361,11 +362,13 @@ export const en = {
   'profile.displayName': 'Display name',
   'profile.friends': 'Friends',
   'profile.appearance': 'Appearance',
-  'profile.system': 'System',
   'profile.light': 'Light',
   'profile.dark': 'Dark',
   'profile.language': 'Language',
   'profile.logout': 'Log out',
+  'profile.changePhoto': 'Change profile picture',
+  'profile.photoError': 'Could not update your photo.',
+  'profile.photoPermission': 'Allow photo access to choose a profile picture.',
 };
 
 export const nb: Record<keyof typeof en, string> = {
@@ -556,6 +559,7 @@ export const nb: Record<keyof typeof en, string> = {
 
   // club overview
   'club.currentRead': 'Aktiv bok',
+  'club.previousReads': 'Tidligere bøker',
   'club.noCurrent': 'Ingen bok ennå. Start en avstemning eller velg en.',
   'club.discussion': 'Diskusjonsspørsmål',
   'club.choose': 'Velg bok',
@@ -599,7 +603,7 @@ export const nb: Record<keyof typeof en, string> = {
   'round.nowCurrent': 'Nå klubbens aktive bok.',
   'round.noWinner': 'Denne runden ble avsluttet uten nominasjoner.',
   'round.nominate': 'Nominer en bok',
-  'round.voteHint': 'Velg favoritten din. Du kan endre stemmen frem til fristen.',
+  'round.voteHint': 'Velg favoritten din. Trykk på en annen bok for å bytte, eller på valget ditt igjen for å fjerne stemmen.',
   'round.hiddenCounts': 'Resultatet er skjult til avstemningen stenger.',
   'round.nominations': 'Nominerte bøker ({{n}})',
   'round.noNominations': 'Ingen bøker nominert ennå',
@@ -728,9 +732,11 @@ export const nb: Record<keyof typeof en, string> = {
   'profile.displayName': 'Visningsnavn',
   'profile.friends': 'Venner',
   'profile.appearance': 'Utseende',
-  'profile.system': 'System',
   'profile.light': 'Lys',
   'profile.dark': 'Mørk',
   'profile.language': 'Språk',
   'profile.logout': 'Logg ut',
+  'profile.changePhoto': 'Bytt profilbilde',
+  'profile.photoError': 'Kunne ikke oppdatere bildet ditt.',
+  'profile.photoPermission': 'Gi tilgang til bilder for å velge profilbilde.',
 };

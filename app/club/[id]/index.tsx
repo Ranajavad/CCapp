@@ -1,6 +1,7 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { Alert, Share, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Alert, Pressable, Share, View } from 'react-native';
 import { BookPickerModal } from '@/components/BookPickerModal';
 import { AppText, Avatar, Badge, BookCover, Button, Card, ErrorState, Loading, Row, Screen, Section } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
@@ -12,7 +13,8 @@ import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/lib/theme';
 import { Book, Club, Meeting, Round, roundPhase } from '@/lib/types';
 
-type Member = { user_id: string; role: 'owner' | 'member'; profiles: { display_name: string } | null };
+type Member = { user_id: string; role: 'owner' | 'member'; profiles: { display_name: string; avatar_url?: string | null } | null };
+type PreviousRead = { id: string; replaced_at: string; books: Book | null };
 type Announcement = { id: string; kind: string; body: string; created_at: string; books: Book | null };
 
 export default function ClubOverview() {
@@ -22,12 +24,13 @@ export default function ClubOverview() {
   const { user } = useAuth();
   const router = useRouter();
   const [picker, setPicker] = useState(false);
+  const [showPrevious, setShowPrevious] = useState(false);
 
   const { data, loading, error, reload, refreshing, refresh } = useData(async () => {
     await supabase.rpc('close_due_rounds');
-    const [club, members, rounds, meeting, news] = await Promise.all([
+    const [club, members, rounds, meeting, news, previous] = await Promise.all([
       supabase.from('clubs').select('*, books:current_book_id(*)').eq('id', id).maybeSingle(),
-      supabase.from('club_members').select('user_id,role,profiles:user_id(display_name)').eq('club_id', id).order('joined_at'),
+      supabase.from('club_members').select('user_id,role,profiles:user_id(display_name,avatar_url)').eq('club_id', id).order('joined_at'),
       supabase.from('club_rounds').select('*').eq('club_id', id).order('created_at', { ascending: false }).limit(5),
       supabase
         .from('club_meetings')
@@ -43,6 +46,11 @@ export default function ClubOverview() {
         .eq('club_id', id)
         .order('created_at', { ascending: false })
         .limit(5),
+      supabase
+        .from('club_previous_reads')
+        .select('id,replaced_at,books:book_id(*)')
+        .eq('club_id', id)
+        .order('replaced_at', { ascending: false }),
     ]);
     if (club.error) throw club.error;
     return {
@@ -51,6 +59,7 @@ export default function ClubOverview() {
       rounds: (rounds.data ?? []) as Round[],
       nextMeeting: ((meeting.data ?? [])[0] ?? null) as unknown as Meeting | null,
       news: (news.data ?? []) as unknown as Announcement[],
+      previous: (previous.data ?? []) as unknown as PreviousRead[],
     };
   }, [id]);
 
@@ -58,7 +67,7 @@ export default function ClubOverview() {
   if (error || !data) return <ErrorState message={error ?? ''} onRetry={reload} />;
   if (!data.club) return <ErrorState message={t('common.notFound')} />;
 
-  const { club, members, rounds, nextMeeting, news } = data;
+  const { club, members, rounds, nextMeeting, news, previous } = data;
   const isOwner = club.owner_id === user!.id;
   const activeRound = rounds.find((r) => roundPhase(r) !== 'closed');
 
@@ -137,6 +146,46 @@ export default function ClubOverview() {
         </Row>
       </Section>
 
+      {previous.length ? (
+        <Card onPress={() => setShowPrevious((v) => !v)}>
+          <Row style={{ justifyContent: 'space-between' }}>
+            <Row gap={8} style={{ flex: 1 }}>
+              <AppText style={{ fontSize: 22 }}>📚</AppText>
+              <AppText variant="subheading">{t('club.previousReads')}</AppText>
+              <View style={{ backgroundColor: colors.surfaceAlt, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 2 }}>
+                <AppText variant="caption" style={{ color: colors.primary, fontWeight: '700' }}>
+                  {previous.length}
+                </AppText>
+              </View>
+            </Row>
+            <Ionicons name={showPrevious ? 'chevron-up-circle' : 'chevron-down-circle'} size={24} color={colors.primary} />
+          </Row>
+          {showPrevious
+            ? previous.map((p) =>
+                p.books ? (
+                  <Pressable
+                    key={p.id}
+                    onPress={() => router.push(`/book/${encodeURIComponent(p.books!.external_id)}`)}
+                    style={{ backgroundColor: colors.surfaceAlt, borderRadius: 16, padding: 10 }}
+                  >
+                    <Row gap={10}>
+                      <BookCover url={p.books.cover_url} title={p.books.title} width={34} />
+                      <View style={{ flex: 1 }}>
+                        <AppText numberOfLines={1} style={{ fontWeight: '600' }}>
+                          {p.books.title}
+                        </AppText>
+                        <AppText variant="caption" muted numberOfLines={1}>
+                          {(p.books.authors ?? []).join(', ')}
+                        </AppText>
+                      </View>
+                    </Row>
+                  </Pressable>
+                ) : null,
+              )
+            : null}
+        </Card>
+      ) : null}
+
       <Section title={t('club.nextMeeting')}>
         {nextMeeting ? (
           <Card onPress={() => router.push(`/club/meeting/${nextMeeting.id}`)}>
@@ -196,7 +245,7 @@ export default function ClubOverview() {
       <Section title={t('club.members', { n: members.length })}>
         {members.map((m) => (
           <Row key={m.user_id}>
-            <Avatar name={m.profiles?.display_name ?? '?'} size={32} />
+            <Avatar name={m.profiles?.display_name ?? '?'} url={m.profiles?.avatar_url} size={32} />
             <AppText style={{ flex: 1 }}>{m.profiles?.display_name}</AppText>
             {m.role === 'owner' ? <Badge label={t('club.owner')} /> : null}
           </Row>

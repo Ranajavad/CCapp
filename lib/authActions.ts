@@ -62,7 +62,9 @@ export async function signInWithApple() {
 
 /** Sign in with Google through Supabase OAuth (PKCE) in an in-app browser. */
 export async function signInWithGoogle() {
-  const redirectTo = Linking.createURL('auth-callback');
+  // On phones the auth sheet listens for the app's own scheme (also Supabase's Site URL),
+  // which works in Expo Go too. On web, return to the current origin.
+  const redirectTo = Platform.OS === 'web' ? Linking.createURL('auth-callback') : 'candc://auth-callback';
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo, skipBrowserRedirect: true },
@@ -70,7 +72,11 @@ export async function signInWithGoogle() {
   if (error) throw error;
   if (!data.url) throw new Error('No OAuth URL returned');
 
-  const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+  // Ephemeral session: don't share Safari cookies, which avoids a Google account chooser
+  // that hangs on iOS (Expo Go). Users pick their account each time.
+  const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo, {
+    preferEphemeralSession: true,
+  });
   if (result.type !== 'success') return false;
 
   const url = new URL(result.url);

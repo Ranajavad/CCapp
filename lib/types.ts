@@ -37,7 +37,7 @@ export type BookNote = {
   created_at: string;
 };
 
-export type Profile = { id: string; display_name: string; bio?: string | null };
+export type Profile = { id: string; display_name: string; bio?: string | null; avatar_url?: string | null };
 
 export type Club = {
   id: string;

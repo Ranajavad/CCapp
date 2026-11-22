@@ -17,9 +17,9 @@ type Nomination = {
   book_id: string;
   nominated_by: string;
   books: Book;
-  profiles: { display_name: string } | null;
+  profiles: { display_name: string; avatar_url?: string | null } | null;
 };
-type Vote = { user_id: string; nomination_id: string; profiles: { display_name: string } | null };
+type Vote = { user_id: string; nomination_id: string; profiles: { display_name: string; avatar_url?: string | null } | null };
 
 export default function RoundScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -39,10 +39,10 @@ export default function RoundScreen() {
       supabase.from('clubs').select('owner_id').eq('id', round.club_id).maybeSingle(),
       supabase
         .from('round_nominations')
-        .select('id,book_id,nominated_by,books(*),profiles:nominated_by(display_name)')
+        .select('id,book_id,nominated_by,books(*),profiles:nominated_by(display_name,avatar_url)')
         .eq('round_id', id)
         .order('created_at'),
-      supabase.from('round_votes').select('user_id,nomination_id,profiles:user_id(display_name)').eq('round_id', id),
+      supabase.from('round_votes').select('user_id,nomination_id,profiles:user_id(display_name,avatar_url)').eq('round_id', id),
       supabase.rpc('round_results', { p_round: id }),
     ]);
     const counts: Record<string, number> = {};
@@ -84,9 +84,12 @@ export default function RoundScreen() {
     }
   };
 
-  const vote = (nominationId: string) =>
+  // One vote per round: tapping another book moves your vote, tapping your pick removes it.
+  const toggleVote = (nominationId: string) =>
     guard(() =>
-      supabase.from('round_votes').upsert({ round_id: id, user_id: user!.id, nomination_id: nominationId }, { onConflict: 'round_id,user_id' }),
+      myVote === nominationId
+        ? supabase.from('round_votes').delete().eq('round_id', id).eq('user_id', user!.id)
+        : supabase.from('round_votes').upsert({ round_id: id, user_id: user!.id, nomination_id: nominationId }, { onConflict: 'round_id,user_id' }),
     );
 
   const closeNow = () =>
@@ -180,7 +183,7 @@ export default function RoundScreen() {
               {!round.anonymous && voters.length > 0 ? (
                 <Row gap={4} style={{ flexWrap: 'wrap' }}>
                   {voters.map((v) => (
-                    <Avatar key={v.user_id} name={v.profiles?.display_name ?? '?'} size={24} />
+                    <Avatar key={v.user_id} name={v.profiles?.display_name ?? '?'} url={v.profiles?.avatar_url} size={24} />
                   ))}
                 </Row>
               ) : null}
@@ -191,7 +194,7 @@ export default function RoundScreen() {
                   variant={mine ? 'primary' : 'secondary'}
                   icon={mine ? 'checkmark-circle' : 'ellipse-outline'}
                   title={mine ? t('round.yourVote') : t('round.vote')}
-                  onPress={() => vote(n.id)}
+                  onPress={() => toggleVote(n.id)}
                   disabled={busy}
                 />
               ) : null}

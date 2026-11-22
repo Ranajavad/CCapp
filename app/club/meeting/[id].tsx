@@ -12,8 +12,8 @@ import { supabase } from '@/lib/supabase';
 import { useTheme } from '@/lib/theme';
 import type { Meeting, RsvpStatus } from '@/lib/types';
 
-type Rsvp = { user_id: string; status: RsvpStatus; profiles: { display_name: string } | null };
-type Note = { id: string; user_id: string; body: string; created_at: string; profiles: { display_name: string } | null };
+type Rsvp = { user_id: string; status: RsvpStatus; profiles: { display_name: string; avatar_url?: string | null } | null };
+type Note = { id: string; user_id: string; body: string; created_at: string; profiles: { display_name: string; avatar_url?: string | null } | null };
 
 export default function MeetingScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -32,8 +32,8 @@ export default function MeetingScreen() {
     if (!meeting) return null;
     const [club, rsvps, notes] = await Promise.all([
       supabase.from('clubs').select('owner_id,name').eq('id', meeting.club_id).maybeSingle(),
-      supabase.from('meeting_rsvps').select('user_id,status,profiles:user_id(display_name)').eq('meeting_id', id),
-      supabase.from('meeting_notes').select('id,user_id,body,created_at,profiles:user_id(display_name)').eq('meeting_id', id).order('created_at'),
+      supabase.from('meeting_rsvps').select('user_id,status,profiles:user_id(display_name,avatar_url)').eq('meeting_id', id),
+      supabase.from('meeting_notes').select('id,user_id,body,created_at,profiles:user_id(display_name,avatar_url)').eq('meeting_id', id).order('created_at'),
     ]);
     return {
       meeting: meeting as unknown as Meeting,
@@ -183,7 +183,7 @@ export default function MeetingScreen() {
                 <Row gap={6} style={{ flexWrap: 'wrap' }}>
                   {group(s).map((r) => (
                     <Row key={r.user_id} gap={6}>
-                      <Avatar name={r.profiles?.display_name ?? '?'} size={26} />
+                      <Avatar name={r.profiles?.display_name ?? '?'} url={r.profiles?.avatar_url} size={26} />
                       <AppText variant="caption">{r.profiles?.display_name}</AppText>
                     </Row>
                   ))}
@@ -234,7 +234,7 @@ export default function MeetingScreen() {
         {notes.map((n) => (
           <Card key={n.id}>
             <Row style={{ alignItems: 'flex-start' }}>
-              <Avatar name={n.profiles?.display_name ?? '?'} size={28} />
+              <Avatar name={n.profiles?.display_name ?? '?'} url={n.profiles?.avatar_url} size={28} />
               <View style={{ flex: 1 }}>
                 <AppText variant="caption" style={{ fontWeight: '700' }}>
                   {n.user_id === user!.id ? t('common.you') : n.profiles?.display_name}
