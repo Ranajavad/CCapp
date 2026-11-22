@@ -1,14 +1,14 @@
 import Constants from 'expo-constants';
-import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, Alert, Modal, Pressable, Switch, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, Switch, View } from 'react-native';
 import { AppText, Avatar, Button, Card, Input, Row, Screen } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
+import { AVATARS, avatarIdFrom, avatarValue } from '@/lib/avatars';
 import { signOut } from '@/lib/authActions';
 import { useData } from '@/lib/hooks';
-import { deviceLanguage, LangPref, loadLanguagePref, setLanguagePref, useT } from '@/lib/i18n';
+import { deviceLanguage, LangPref, loadLanguagePref, setLanguagePref, TKey, useT } from '@/lib/i18n';
 import { supabase } from '@/lib/supabase';
 import { radius, useTheme } from '@/lib/theme';
 
@@ -26,7 +26,8 @@ export default function Profile() {
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [avatarOpen, setAvatarOpen] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState(false);
 
   useEffect(() => {
     loadLanguagePref().then(setPref);
@@ -41,35 +42,16 @@ export default function Profile() {
     if (profile) setName(profile.display_name);
   }, [profile]);
 
-  const pickPhoto = async () => {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert(t('common.error'), t('profile.photoPermission'));
+  const chooseAvatar = async (id: string) => {
+    setSavingAvatar(true);
+    const { error } = await supabase.from('profiles').update({ avatar_url: avatarValue(id) }).eq('id', user!.id);
+    setSavingAvatar(false);
+    if (error) {
+      Alert.alert(t('common.error'), error.message);
       return;
     }
-    const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.5,
-    });
-    if (res.canceled || !res.assets[0]) return;
-    setUploading(true);
-    try {
-      const bytes = await (await fetch(res.assets[0].uri)).arrayBuffer();
-      const path = `${user!.id}/avatar.jpg`;
-      const up = await supabase.storage.from('avatars').upload(path, bytes, { contentType: 'image/jpeg', upsert: true });
-      if (up.error) throw up.error;
-      // Same path every time, so add a version to the URL to bust image caches.
-      const url = `${supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl}?v=${Date.now()}`;
-      const { error } = await supabase.from('profiles').update({ avatar_url: url }).eq('id', user!.id);
-      if (error) throw error;
-      reload();
-    } catch (e) {
-      Alert.alert(t('common.error'), e instanceof Error ? e.message : t('profile.photoError'));
-    } finally {
-      setUploading(false);
-    }
+    setAvatarOpen(false);
+    reload();
   };
 
   const saveName = async () => {
@@ -111,7 +93,7 @@ export default function Profile() {
       </Row>
 
       <Row>
-        <Pressable onPress={pickPhoto} disabled={uploading} accessibilityLabel={t('profile.changePhoto')} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+        <Pressable onPress={() => setAvatarOpen(true)} accessibilityLabel={t('profile.changePhoto')} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
           <Avatar name={profile?.display_name ?? '?'} url={profile?.avatar_url} size={72} />
           <View
             style={{
@@ -128,7 +110,7 @@ export default function Profile() {
               justifyContent: 'center',
             }}
           >
-            {uploading ? <ActivityIndicator size="small" color={colors.onPrimary} /> : <Ionicons name="camera" size={14} color={colors.onPrimary} />}
+            <Ionicons name="pencil" size={13} color={colors.onPrimary} />
           </View>
         </Pressable>
         <View style={{ flex: 1 }}>
@@ -145,6 +127,51 @@ export default function Profile() {
       </Card>
 
       <Button variant="secondary" icon="people-outline" title={t('profile.friends')} onPress={() => router.push('/friends')} />
+
+      <Modal transparent animationType="slide" visible={avatarOpen} onRequestClose={() => setAvatarOpen(false)}>
+        <Pressable onPress={() => setAvatarOpen(false)} style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
+          <Pressable
+            onPress={() => {}}
+            style={{ backgroundColor: colors.surface, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: 20, maxHeight: '80%' }}
+          >
+            <Row style={{ justifyContent: 'space-between', marginBottom: 8 }}>
+              <AppText variant="heading">{t('profile.chooseAvatar')}</AppText>
+              <Pressable onPress={() => setAvatarOpen(false)} accessibilityLabel={t('common.cancel')} hitSlop={10}>
+                <Ionicons name="close" size={24} color={colors.textMuted} />
+              </Pressable>
+            </Row>
+            <ScrollView contentContainerStyle={{ paddingBottom: 16 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, justifyContent: 'center' }}>
+                {AVATARS.map((a) => {
+                  const selected = avatarIdFrom(profile?.avatar_url) === a.id;
+                  return (
+                    <Pressable
+                      key={a.id}
+                      disabled={savingAvatar}
+                      onPress={() => chooseAvatar(a.id)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected }}
+                      accessibilityLabel={t(`avatar.${a.id}` as TKey)}
+                      style={({ pressed }) => ({ opacity: pressed || savingAvatar ? 0.6 : 1 })}
+                    >
+                      <View
+                        style={{
+                          padding: 3,
+                          borderRadius: 40,
+                          borderWidth: 3,
+                          borderColor: selected ? colors.primary : 'transparent',
+                        }}
+                      >
+                        <Avatar name={a.id} url={avatarValue(a.id)} size={58} />
+                      </View>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <Modal transparent animationType="fade" visible={langOpen} onRequestClose={() => setLangOpen(false)}>
         <Pressable

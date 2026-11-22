@@ -16,6 +16,8 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
+import Svg from 'react-native-svg';
+import { findAvatar } from '@/lib/avatars';
 import { useT } from '@/lib/i18n';
 import { fonts, radius, useTheme } from '@/lib/theme';
 import { initials } from '@/lib/format';
@@ -380,6 +382,17 @@ const AVATAR_COLORS = ['#6B2D5C', '#2E7D5B', '#B5651D', '#3B5BA5', '#8E3B46', '#
 
 export function Avatar({ name, url, size = 36 }: { name: string; url?: string | null; size?: number }) {
   const [failed, setFailed] = React.useState(false);
+  const preset = findAvatar(url);
+  if (preset) {
+    const { Art } = preset;
+    return (
+      <View style={{ width: size, height: size, borderRadius: size / 2, overflow: 'hidden' }}>
+        <Svg width={size} height={size} viewBox="0 0 100 100">
+          <Art />
+        </Svg>
+      </View>
+    );
+  }
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % AVATAR_COLORS.length;
   return (
