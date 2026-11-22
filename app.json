@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "Chapters & Chatters",
+    "slug": "chapters-and-chatters",
+    "scheme": "candc",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#6B2D5C"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "no.chaptersandchatters.app",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "CFBundleAllowMixedLocalizations": true
+      }
+    },
+    "android": {
+      "package": "no.chaptersandchatters.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#6B2D5C"
+      }
+    },
+    "locales": {
+      "en": "./locales/en.json",
+      "nb": "./locales/nb.json"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-localization",
+      "expo-web-browser",
+      "expo-apple-authentication",
+      [
+        "expo-notifications",
+        {
+          "color": "#6B2D5C"
+        }
+      ],
+      "@react-native-community/datetimepicker"
+    ],
+    "experiments": {}
+  }
+}
