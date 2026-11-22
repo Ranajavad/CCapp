@@ -4,6 +4,7 @@ import type { Book } from './types';
 
 // Free book data from the Google Books API (no key required; a key only raises quota).
 // We store the cover *URL* returned by the API – never the image itself.
+// Open Library is used automatically when Google Books is rate-limited.
 const BASE = 'https://www.googleapis.com/books/v1/volumes';
 const KEY = process.env.EXPO_PUBLIC_GOOGLE_BOOKS_KEY;
 
@@ -52,9 +53,78 @@ function normalizeQuery(q: string): string {
   return /^\d{9}[\dXx]$|^\d{13}$/.test(digits) ? `isbn:${digits}` : q.trim();
 }
 
+// ---- Open Library (free, no key) – automatic fallback when Google Books is rate-limited ----
+const OL = 'https://openlibrary.org';
+const OL_LANG: Record<string, string> = { no: 'nor', en: 'eng' };
+
+function mapOpenLibraryDoc(d: any): Book {
+  return {
+    external_id: `ol:${d.key}`, // e.g. ol:/works/OL45804W
+    title: d.title ?? '',
+    authors: d.author_name ?? [],
+    description: null,
+    cover_url: d.cover_i ? `https://covers.openlibrary.org/b/id/${d.cover_i}-M.jpg` : null,
+    page_count: d.number_of_pages_median ?? null,
+    published_year: d.first_publish_year ?? null,
+    isbn: (d.isbn ?? [])[0] ?? null,
+    categories: (d.subject ?? []).slice(0, 3),
+    language: (d.language ?? [])[0] ?? null,
+  };
+}
+
+async function searchOpenLibrary(
+  query: string,
+  opts: { lang?: string; max?: number; start?: number; orderBy?: 'relevance' | 'newest' },
+): Promise<Book[]> {
+  const q = normalizeQuery(query).replace(/^isbn:/, 'isbn:');
+  const params = new URLSearchParams({
+    q,
+    limit: String(opts.max ?? 20),
+    offset: String(opts.start ?? 0),
+    fields: 'key,title,author_name,cover_i,first_publish_year,isbn,subject,number_of_pages_median,language',
+  });
+  if (opts.lang && OL_LANG[opts.lang]) params.set('language', OL_LANG[opts.lang]);
+  if (opts.orderBy === 'newest') params.set('sort', 'new');
+  const res = await fetch(`${OL}/search.json?${params.toString()}`);
+  if (!res.ok) throw new Error(`Book search failed (${res.status})`);
+  const json = await res.json();
+  return (json.docs ?? []).map(mapOpenLibraryDoc).filter((b: Book) => b.title);
+}
+
+async function getOpenLibraryWork(key: string): Promise<Book> {
+  const [workRes, searchRes] = await Promise.all([
+    fetch(`${OL}${key}.json`),
+    fetch(
+      `${OL}/search.json?q=key:${encodeURIComponent(key)}&limit=1&fields=key,title,author_name,cover_i,first_publish_year,isbn,subject,number_of_pages_median,language`,
+    ),
+  ]);
+  if (!workRes.ok) throw new Error(`Book lookup failed (${workRes.status})`);
+  const work = await workRes.json();
+  const doc = searchRes.ok ? ((await searchRes.json()).docs ?? [])[0] ?? {} : {};
+  const desc = typeof work.description === 'string' ? work.description : work.description?.value;
+  return {
+    ...mapOpenLibraryDoc({ key, title: work.title, ...doc }),
+    title: work.title ?? doc.title ?? '',
+    description: cleanText(desc),
+    cover_url: work.covers?.[0] ? `https://covers.openlibrary.org/b/id/${work.covers[0]}-L.jpg` : (doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-L.jpg` : null),
+  };
+}
+
 export async function searchBooks(
   query: string,
   opts: { lang?: string; max?: number; start?: number; orderBy?: 'relevance' | 'newest' } = {},
+): Promise<Book[]> {
+  try {
+    return await searchGoogleBooks(query, opts);
+  } catch (e: any) {
+    // Google Books answers 429 when its keyless quota is used up; fall back to Open Library.
+    return await searchOpenLibrary(query, opts);
+  }
+}
+
+async function searchGoogleBooks(
+  query: string,
+  opts: { lang?: string; max?: number; start?: number; orderBy?: 'relevance' | 'newest' },
 ): Promise<Book[]> {
   const params = new URLSearchParams({
     q: normalizeQuery(query),
@@ -72,6 +142,7 @@ export async function searchBooks(
 }
 
 export async function getVolume(id: string): Promise<Book> {
+  if (id.startsWith('ol:')) return getOpenLibraryWork(id.slice(3));
   const res = await fetch(`${BASE}/${encodeURIComponent(id)}${KEY ? `?key=${KEY}` : ''}`);
   if (!res.ok) throw new Error(`Book lookup failed (${res.status})`);
   return mapVolume(await res.json());

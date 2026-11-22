@@ -1,5 +1,6 @@
 import type { Session, User } from '@supabase/supabase-js';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { DEMO_USER, SKIP_LOGIN } from './devMode';
 import { supabase } from './supabase';
 
 type AuthCtx = { session: Session | null; user: User | null; loading: boolean };
@@ -20,7 +21,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => data.subscription.unsubscribe();
   }, []);
 
-  return <Ctx.Provider value={{ session, user: session?.user ?? null, loading }}>{children}</Ctx.Provider>;
+  const user = session?.user ?? (SKIP_LOGIN ? DEMO_USER : null);
+  return <Ctx.Provider value={{ session, user, loading }}>{children}</Ctx.Provider>;
 }
 
 export const useAuth = () => useContext(Ctx);

@@ -25,6 +25,9 @@ i18n.use(initReactI18next).init({
   interpolation: { escapeValue: false },
   initImmediate: false,
   returnNull: false,
+  // Hermes inside Expo Go has no Intl.PluralRules; use i18next's built-in plural rules
+  // (we only use simple {{n}} interpolation, no plural keys) so it doesn't log a red error.
+  compatibilityJSON: 'v3',
 });
 
 export async function loadLanguagePref(): Promise<LangPref> {

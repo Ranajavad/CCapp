@@ -6,11 +6,12 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppText, Loading, Logo } from '@/components/ui';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { applyLanguagePref, loadLanguagePref, useT } from '@/lib/i18n';
+import { SKIP_LOGIN } from '@/lib/devMode';
 import { isSupabaseConfigured } from '@/lib/supabase';
 import { ThemeProvider, useTheme } from '@/lib/theme';
 
 function Gate() {
-  const { session, loading } = useAuth();
+  const { user, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
   const { t } = useT();
@@ -21,13 +22,13 @@ function Gate() {
   }, []);
 
   useEffect(() => {
-    if (loading || !isSupabaseConfigured) return;
+    if (loading || !(isSupabaseConfigured || SKIP_LOGIN)) return;
     const inAuth = segments[0] === '(auth)';
-    if (!session && !inAuth) router.replace('/(auth)/login');
-    else if (session && inAuth) router.replace('/(tabs)');
-  }, [session, loading, segments, router]);
+    if (!user && !inAuth) router.replace('/(auth)/login');
+    else if (user && inAuth) router.replace('/(tabs)');
+  }, [user, loading, segments, router]);
 
-  if (!isSupabaseConfigured) {
+  if (!isSupabaseConfigured && !SKIP_LOGIN) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', padding: 28, gap: 14 }}>
         <Logo size={72} />
