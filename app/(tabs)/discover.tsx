@@ -123,7 +123,7 @@ export default function Discover() {
       columnWrapperStyle={{ gap: 12, marginBottom: 16 }}
       keyExtractor={(b) => b.external_id}
       ListHeaderComponent={header}
-      ListEmptyComponent={!loading ? <EmptyState icon="search-outline" title={t('discover.none')} /> : null}
+      ListEmptyComponent={!loading ? <EmptyState icon="search-outline" title={t('discover.none')} /> : undefined}
       renderItem={({ item }) => (
         <View style={{ flex: 1 / 3 }}>
           <Cover book={item} width={96} onPress={() => open(item)} />

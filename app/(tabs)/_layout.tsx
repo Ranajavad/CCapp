@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
+import type { ColorValue } from 'react-native';
 import { Logo } from '@/components/ui';
 import { useT } from '@/lib/i18n';
 import { fonts, useTheme } from '@/lib/theme';
@@ -12,8 +13,8 @@ export default function TabsLayout() {
   const { colors } = useTheme();
 
   const icon = (active: IconName, inactive: IconName) =>
-    function TabIcon({ color, size, focused }: { color: string; size: number; focused: boolean }) {
-      return <Ionicons name={focused ? active : inactive} size={size} color={color} />;
+    function TabIcon({ color, size, focused }: { color: ColorValue; size: number; focused: boolean }) {
+      return <Ionicons name={focused ? active : inactive} size={size} color={color as string} />;
     };
 
   return (
