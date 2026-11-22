@@ -153,7 +153,7 @@ export default function ClubOverview() {
               <AppText style={{ fontSize: 22 }}>📚</AppText>
               <AppText variant="subheading">{t('club.previousReads')}</AppText>
               <View style={{ backgroundColor: colors.surfaceAlt, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 2 }}>
-                <AppText variant="caption" style={{ color: colors.primary, fontWeight: '700' }}>
+                <AppText variant="caption" style={{ color: colors.text, fontWeight: '700', textDecorationLine: 'underline' }}>
                   {previous.length}
                 </AppText>
               </View>

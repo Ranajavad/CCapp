@@ -188,7 +188,7 @@ export default function Discussion() {
               gap: 14,
             }}
           >
-            <AppText variant="label" style={{ color: colors.onPrimary, opacity: 0.8 }}>
+            <AppText variant="label" style={{ color: colors.onPrimary }}>
               {t(`ai.stage.${stage}` as TKey)} · {stageIndex + 1}/{STAGES.length}
             </AppText>
             {loading && !current ? (

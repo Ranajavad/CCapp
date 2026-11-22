@@ -201,7 +201,7 @@ export default function BookDetail() {
           <Section title={t('book.about')}>
             <AppText>{shortDesc}</AppText>
             {description.length > 320 ? (
-              <AppText onPress={() => setExpanded(!expanded)} style={{ color: colors.primary, fontWeight: '700' }}>
+              <AppText onPress={() => setExpanded(!expanded)} style={{ color: colors.text, fontWeight: '700', textDecorationLine: 'underline' }}>
                 {expanded ? t('common.less') : t('common.more')}
               </AppText>
             ) : null}

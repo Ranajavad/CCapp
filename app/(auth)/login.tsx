@@ -48,7 +48,7 @@ export default function Login() {
       <AppText
         variant="caption"
         onPress={() => router.push('/(auth)/forgot-password')}
-        style={{ color: colors.primary, fontWeight: '700', alignSelf: 'flex-end' }}
+        style={{ color: colors.text, fontWeight: '700', textDecorationLine: 'underline', alignSelf: 'flex-end' }}
       >
         {t('auth.forgot')}
       </AppText>
@@ -58,7 +58,7 @@ export default function Login() {
 
       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
         <AppText muted>{t('auth.noAccount')}</AppText>
-        <AppText onPress={() => router.push('/(auth)/register')} style={{ color: colors.primary, fontWeight: '700' }}>
+        <AppText onPress={() => router.push('/(auth)/register')} style={{ color: colors.text, fontWeight: '700', textDecorationLine: 'underline' }}>
           {t('auth.register')}
         </AppText>
       </View>

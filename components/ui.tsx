@@ -16,7 +16,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import Svg from 'react-native-svg';
+import Svg, { Path, Rect, Text as SvgText } from 'react-native-svg';
 import { findAvatar } from '@/lib/avatars';
 import { useT } from '@/lib/i18n';
 import { fonts, radius, useTheme } from '@/lib/theme';
@@ -51,7 +51,7 @@ export function AppText({
     label: { fontSize: 12, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase' },
   };
   return (
-    <Text {...rest} style={[base[variant], { color: muted ? colors.textMuted : colors.text }, style]}>
+    <Text {...rest} style={[base[variant], { color: colors.text }, style]}>
       {children}
     </Text>
   );
@@ -185,7 +185,7 @@ export function Button({
   const { colors } = useTheme();
   const bg =
     variant === 'primary' ? colors.primary : variant === 'danger' ? colors.danger : variant === 'secondary' ? colors.surfaceAlt : 'transparent';
-  const fg = variant === 'primary' ? colors.onPrimary : variant === 'danger' ? '#FFFFFF' : variant === 'ghost' ? colors.primary : colors.text;
+  const fg = variant === 'primary' ? colors.onPrimary : colors.text;
   const off = disabled || loading;
   return (
     <Pressable
@@ -261,7 +261,7 @@ export function Input({
         ]}
       />
       {error ? (
-        <AppText variant="caption" style={{ color: colors.danger }}>
+        <AppText variant="caption" style={{ fontWeight: '700' }}>
           {error}
         </AppText>
       ) : null}
@@ -372,15 +372,14 @@ export function Badge({ label, color }: { label: string; color?: string }) {
         alignSelf: 'flex-start',
       }}
     >
-      <Text style={{ color: color ? '#FFFFFF' : colors.text, fontSize: 12, fontWeight: '700' }}>{label}</Text>
+      <Text style={{ color: color === colors.primary ? colors.onPrimary : colors.text, fontSize: 12, fontWeight: '700' }}>{label}</Text>
     </View>
   );
 }
 
 // ---------------------------------------------------------------- Media
-const AVATAR_COLORS = ['#6B2D5C', '#2E7D5B', '#B5651D', '#3B5BA5', '#8E3B46', '#5B6B2D'];
-
 export function Avatar({ name, url, size = 36 }: { name: string; url?: string | null; size?: number }) {
+  const { colors } = useTheme();
   const [failed, setFailed] = React.useState(false);
   const preset = findAvatar(url);
   if (preset) {
@@ -394,14 +393,14 @@ export function Avatar({ name, url, size = 36 }: { name: string; url?: string | 
     );
   }
   let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % AVATAR_COLORS.length;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % colors.avatars.length;
   return (
     <View
       style={{
         width: size,
         height: size,
         borderRadius: size / 2,
-        backgroundColor: AVATAR_COLORS[h],
+        backgroundColor: colors.avatars[h],
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
@@ -410,7 +409,7 @@ export function Avatar({ name, url, size = 36 }: { name: string; url?: string | 
       {url && !failed ? (
         <Image source={{ uri: url }} style={{ width: size, height: size }} onError={() => setFailed(true)} />
       ) : (
-        <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: size * 0.38 }}>{initials(name)}</Text>
+        <Text style={{ color: colors.text, fontWeight: '700', fontSize: size * 0.38 }}>{initials(name)}</Text>
       )}
     </View>
   );
@@ -444,49 +443,26 @@ export function BookCover({
   );
 }
 
-export function Logo({ size = 64 }: { size?: number }) {
-  const { colors } = useTheme();
+/** Brand colours of the logo — fixed, they do not change with light/dark mode. */
+export const brand = { olive: '#657159', cream: '#F7F2E2', ink: '#20261C' };
+
+/**
+ * The app logo: a speech bubble saying "C&C" above an open book.
+ * `bare` draws only the artwork (for use on an olive background); otherwise it sits on a rounded olive tile.
+ */
+export function Logo({ size = 64, bare = false }: { size?: number; bare?: boolean }) {
   return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size * 0.24,
-        backgroundColor: colors.primary,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <View
-        style={{
-          width: size * 0.8,
-          height: size * 0.54,
-          borderRadius: size * 0.2,
-          backgroundColor: colors.onPrimary,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: size * 0.08,
-        }}
-      >
-        <Text style={{ fontFamily: fonts.serif, fontWeight: '800', fontSize: size * 0.26, color: colors.primary }}>C&amp;C</Text>
-        <View style={{ width: size * 0.3, height: Math.max(2, size * 0.035), backgroundColor: colors.accent, borderRadius: 2 }} />
-      </View>
-      <View
-        style={{
-          position: 'absolute',
-          bottom: size * 0.1,
-          left: size * 0.24,
-          width: 0,
-          height: 0,
-          borderLeftWidth: size * 0.08,
-          borderRightWidth: size * 0.08,
-          borderTopWidth: size * 0.13,
-          borderLeftColor: 'transparent',
-          borderRightColor: 'transparent',
-          borderTopColor: colors.onPrimary,
-        }}
-      />
-    </View>
+    <Svg width={size} height={size} viewBox={bare ? '18 16 164 164' : '0 0 200 200'}>
+      {!bare && <Rect width={200} height={200} rx={48} fill={brand.olive} />}
+      <Path d="M100 166 C84 153 54 149 32 155 L32 104 C54 98 84 102 100 114 Z" fill={brand.cream} />
+      <Path d="M100 166 C116 153 146 149 168 155 L168 104 C146 98 116 102 100 114 Z" fill={brand.cream} />
+      <Path d="M100 114 V166" stroke={brand.olive} strokeWidth={3} />
+      <Rect x={44} y={28} width={112} height={58} rx={24} fill={brand.ink} />
+      <Path d="M90 84 L100 102 L110 84 Z" fill={brand.ink} />
+      <SvgText x={100} y={69} textAnchor="middle" fontFamily={fonts.serif} fontWeight="700" fontSize={32} fill={brand.cream}>
+        C&amp;C
+      </SvgText>
+    </Svg>
   );
 }
 

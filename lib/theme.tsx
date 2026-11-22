@@ -9,44 +9,53 @@ export type Palette = {
   surface: string;
   surfaceAlt: string;
   border: string;
+  /** The one font colour used for ALL text in the app (per theme). */
   text: string;
+  /** Soft tone for icons / placeholders only — never used for text. */
   textMuted: string;
   primary: string;
+  /** Text on top of `primary` — identical to `text` by design. */
   onPrimary: string;
   accent: string;
   danger: string;
   success: string;
   overlay: string;
+  /** Avatar backgrounds; the single `text` colour is always readable on them. */
+  avatars: string[];
 };
 
+// Minimal "cream and sage" — warm neutrals, ink-dark primary, one sage accent.
 const light: Palette = {
-  bg: '#FBF7F0',
+  bg: '#F7F5F0', // cream
   surface: '#FFFFFF',
-  surfaceAlt: '#F3ECE0',
-  border: '#E7DDCF',
-  text: '#2A1B2E',
-  textMuted: '#6E6275',
-  primary: '#6B2D5C',
-  onPrimary: '#FFFFFF',
-  accent: '#E0A030',
-  danger: '#C0392B',
-  success: '#2E7D5B',
-  overlay: 'rgba(30,15,35,0.45)',
+  surfaceAlt: '#E9ECE4', // pale sage-grey
+  border: '#DCDFD3',
+  text: '#1E211C', // ink
+  textMuted: '#868B7E',
+  primary: '#1E211C', // ink — buttons, selected chips
+  onPrimary: '#F7F5F0', // cream on ink
+  accent: '#8BA17F', // sage — progress, stars, highlights
+  danger: '#E39A93', // soft rose-red
+  success: '#A3B899',
+  overlay: 'rgba(30,33,28,0.40)',
+  avatars: ['#C9D4BE', '#E9D3CF', '#DCCFB4', '#D4DAD0', '#E3C4C4', '#BFCDB3'],
 };
 
+// Dark counterpart — warm charcoal, cream primary, same sage accent.
 const dark: Palette = {
-  bg: '#15101A',
-  surface: '#1F1824',
-  surfaceAlt: '#2A2230',
-  border: '#382F40',
-  text: '#F4EDE4',
-  textMuted: '#A89DB0',
-  primary: '#C77DB5',
-  onPrimary: '#1A0F1D',
-  accent: '#F0B848',
-  danger: '#FF7B72',
-  success: '#5BC38F',
-  overlay: 'rgba(0,0,0,0.6)',
+  bg: '#161715',
+  surface: '#1F211E',
+  surfaceAlt: '#2A2D28',
+  border: '#383C35',
+  text: '#F1EFE8', // cream
+  textMuted: '#8C9185',
+  primary: '#F1EFE8', // cream — buttons, selected chips
+  onPrimary: '#161715', // ink on cream
+  accent: '#9DB391', // sage
+  danger: '#B4584F',
+  success: '#6F8A64',
+  overlay: 'rgba(8,10,8,0.65)',
+  avatars: ['#4A5A42', '#6B4A47', '#6B5E43', '#3E463A', '#74504F', '#55684A'],
 };
 
 export const fonts = {

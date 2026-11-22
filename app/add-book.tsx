@@ -87,7 +87,7 @@ export default function AddBook() {
             {t('add.isbnHint')}
           </AppText>
           {loading ? <ActivityIndicator color={colors.primary} /> : null}
-          {error ? <AppText style={{ color: colors.danger }}>{error}</AppText> : null}
+          {error ? <AppText style={{ fontWeight: '700' }}>{error}</AppText> : null}
         </View>
       }
       renderItem={({ item }) => (

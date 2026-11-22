@@ -41,7 +41,7 @@ export default function Home() {
       <Section
         title={t('home.nowReading')}
         action={
-          <AppText variant="caption" onPress={() => router.push('/(tabs)/library')} style={{ color: colors.primary, fontWeight: '700' }}>
+          <AppText variant="caption" onPress={() => router.push('/(tabs)/library')} style={{ color: colors.text, fontWeight: '700', textDecorationLine: 'underline' }}>
             {t('home.seeLibrary')}
           </AppText>
         }
@@ -88,7 +88,7 @@ export default function Home() {
       <Section
         title={t('home.friendsFeed')}
         action={
-          <AppText variant="caption" onPress={() => router.push('/friends')} style={{ color: colors.primary, fontWeight: '700' }}>
+          <AppText variant="caption" onPress={() => router.push('/friends')} style={{ color: colors.text, fontWeight: '700', textDecorationLine: 'underline' }}>
             {t('home.friends')}
           </AppText>
         }

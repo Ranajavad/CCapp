@@ -107,7 +107,7 @@ export default function RoundScreen() {
 
       <Card>
         <Row style={{ justifyContent: 'space-between' }}>
-          <Badge label={t(`phase.${phase}` as any)} color={phase === 'closed' ? colors.textMuted : colors.primary} />
+          <Badge label={t(`phase.${phase}` as any)} color={phase === 'closed' ? colors.border : colors.primary} />
           <AppText variant="caption" muted>
             {round.anonymous ? `🕶️ ${t('rounds.anonymousShort')}` : `👀 ${t('rounds.publicShort')}`}
           </AppText>
@@ -122,7 +122,7 @@ export default function RoundScreen() {
 
       {phase === 'closed' && winner ? (
         <Card style={{ borderColor: colors.accent, borderWidth: 2 }}>
-          <AppText variant="label" style={{ color: colors.accent }}>
+          <AppText variant="label">
             🏆 {t('round.winner')}
           </AppText>
           <Row style={{ alignItems: 'flex-start' }}>

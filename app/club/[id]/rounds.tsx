@@ -114,7 +114,7 @@ export default function Rounds() {
                 <AppText variant="subheading" style={{ flex: 1 }}>
                   {r.title}
                 </AppText>
-                <Badge label={t(`phase.${phase}` as any)} color={phase === 'closed' ? colors.textMuted : colors.primary} />
+                <Badge label={t(`phase.${phase}` as any)} color={phase === 'closed' ? colors.border : colors.primary} />
               </Row>
               <AppText variant="caption" muted>
                 {phase === 'nominating'

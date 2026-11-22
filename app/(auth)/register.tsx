@@ -72,7 +72,7 @@ export default function Register() {
 
       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
         <AppText muted>{t('auth.haveAccount')}</AppText>
-        <AppText onPress={() => router.replace('/(auth)/login')} style={{ color: colors.primary, fontWeight: '700' }}>
+        <AppText onPress={() => router.replace('/(auth)/login')} style={{ color: colors.text, fontWeight: '700', textDecorationLine: 'underline' }}>
           {t('auth.login')}
         </AppText>
       </View>
